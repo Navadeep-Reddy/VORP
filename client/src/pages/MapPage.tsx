@@ -1,16 +1,54 @@
 // src/pages/MapPage.tsx
-import { useState } from 'react';
-import Navbar from '@/components/Navbar';
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import Navbar from '../components/Navbar';
 import Map from '@/components/Map';
 import SavedRoutes, { SavedRoute } from '@/components/SavedRoutes';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button as ShadcnButton } from '@/components/ui/button';
 import { useLocation } from '@/context/LocationContext';
 import { Slider } from '@/components/ui/slider';
 
 type Vehicle = {
   id: number;
   capacity: number;
+};
+
+// Update the Button component to handle different variants
+const Button = ({ 
+  primary, 
+  children, 
+  className = '', 
+  onClick,
+  variant = 'default' // 'default' | 'success' | 'danger' | 'secondary'
+}: {
+  primary: boolean;
+  children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+  variant?: 'default' | 'success' | 'danger' | 'secondary';
+}) => {
+  const baseStyles = "px-4 py-2 rounded-md font-medium transition-all duration-300 flex items-center gap-2";
+  
+  const variantStyles = {
+    default: primary 
+      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl' 
+      : 'bg-white text-blue-600 border border-blue-600 hover:bg-blue-50',
+    success: 'bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl',
+    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl',
+    secondary: 'bg-gray-600 text-white hover:bg-gray-700 shadow-lg hover:shadow-xl'
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`${baseStyles} ${variantStyles[variant]} ${className}`}
+    >
+      {children}
+    </button>
+  );
 };
 
 const MapPage: React.FC = () => {
@@ -168,14 +206,14 @@ const MapPage: React.FC = () => {
     <div className="flex flex-col min-h-screen">
       <Navbar />
       {/* Main content container with padding-top to account for the fixed Navbar */}
-      <div className="flex flex-grow pt-14">
+      <div className="flex flex-grow pt-20">
         {/* Collapsible Saved Routes Sidebar (left) */}
         <div
           className={`transition-all duration-300 border-r border-gray-300 flex flex-col items-center ${sidebarOpen ? "w-64" : "w-16"}`}
         >
-          <Button onClick={() => setSidebarOpen(!sidebarOpen)} className="m-2" variant="outline">
+          <ShadcnButton onClick={() => setSidebarOpen(!sidebarOpen)} className="m-2" variant="outline">
             {sidebarOpen ? "<<" : ">>"}
-          </Button>
+          </ShadcnButton>
           {sidebarOpen && (
             <div className="w-full p-2">
               <SavedRoutes onSelectRoute={handleSavedRouteSelect} />
@@ -196,19 +234,19 @@ const MapPage: React.FC = () => {
             <div className="w-96 p-4 border-l border-gray-300">
               {/* Tab Header */}
               <div className="flex space-x-2 mb-4">
-                <Button
+                <ShadcnButton
                   onClick={() => setActiveTab("points")}
                   className={activeTab === "points" ? "btn-solid bg-LightBlue text-BlackText hover:text-white hover:bg-LightBlue" : "btn-outline  hover:bg-LightBlue"}
                 >
                   Points
-                </Button>
+                </ShadcnButton>
 
-                <Button
+                <ShadcnButton
                   onClick={() => setActiveTab("vehicles")}
                   className={activeTab === "vehicles" ? "btn-solid  bg-LightBlue text-BlackText hover:text-white hover:bg-LightBlue" : "btn-outline hover:text-white hover:bg-LightBlue"}
                 >
                   Vehicles
-                </Button>
+                </ShadcnButton>
               </div>
 
               {/* Tab Content */}
@@ -240,7 +278,12 @@ const MapPage: React.FC = () => {
                       className="py-2 accent-secBlue"
                     />
                   </div>
-                  <Button className="bg-AccYellow text-priWhite my-2" onClick={() => handleAddPoint(latitude, longitude, sliderValue[0])}>
+                  <Button 
+                    primary={true} 
+                    variant="default"
+                    className="w-full my-2" 
+                    onClick={() => handleAddPoint(latitude, longitude, sliderValue[0])}
+                  >
                     Add Point
                   </Button>
                   <div className="mt-4">
@@ -261,10 +304,19 @@ const MapPage: React.FC = () => {
                               <div className="text-xs text-gray-500">Demand: {item.capacity}</div>
                             </div>
                             <div className="flex flex-col gap-1">
-                              <Button className="bg-LightBlue text-BlackText hover:text-WhiteText" onClick={() => setDepotIndex(index)}>
+                              <Button 
+                                primary={false} 
+                                variant="secondary"
+                                className="bg-gray-600 text-white hover:bg-gray-700" 
+                                onClick={() => setDepotIndex(index)}
+                              >
                                 Set as Depot
                               </Button>
-                              <Button className="bg-red-500 text-white" onClick={() => handleDeletePoint(index)}>
+                              <Button 
+                                primary={false} 
+                                variant="danger"
+                                onClick={() => handleDeletePoint(index)}
+                              >
                                 Delete
                               </Button>
                             </div>
@@ -291,11 +343,19 @@ const MapPage: React.FC = () => {
                         onChange={(e) => setBatchQuantity(Number(e.target.value))}
                         className="w-1/2 bg-secBlue text-priWhite"
                       />
-                      <Button className="bg-AccYellow text-priWhite" onClick={handleBatchAddVehicles}>
+                      <Button 
+                        primary={true} 
+                        variant="default"
+                        onClick={handleBatchAddVehicles}
+                      >
                         Add Multiple
                       </Button>
                     </div>
-                    <Button className="bg-AccYellow text-priWhite" onClick={handleAddVehicle}>
+                    <Button 
+                      primary={true} 
+                      variant="default"
+                      onClick={handleAddVehicle}
+                    >
                       Add Single
                     </Button>
                   </div>
@@ -311,7 +371,11 @@ const MapPage: React.FC = () => {
                               <div className="font-medium">Vehicle {vehicle.id + 1}</div>
                               <div className="text-sm">Capacity: {vehicle.capacity}</div>
                             </div>
-                            <Button className="bg-red-500 text-white" onClick={() => handleDeleteVehicle(vehicle.id)}>
+                            <Button 
+                              primary={false} 
+                              variant="danger"
+                              onClick={() => handleDeleteVehicle(vehicle.id)}
+                            >
                               Delete
                             </Button>
                           </div>
@@ -325,7 +389,12 @@ const MapPage: React.FC = () => {
               {/* Calculate Routes Button: Visible if at least 2 points and at least 1 vehicle */}
               {(Locations.length >= 2 && vehicles.length >= 1) && (
                 <div className="mt-4">
-                  <Button className="bg-green-500 text-white" onClick={handleCalculateRoutes}>
+                  <Button 
+                    primary={true} 
+                    variant="success"
+                    className="w-full" 
+                    onClick={handleCalculateRoutes}
+                  >
                     Calculate Routes
                   </Button>
                 </div>
