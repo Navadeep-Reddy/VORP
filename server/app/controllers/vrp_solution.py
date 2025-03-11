@@ -1,29 +1,33 @@
 
 from flask import jsonify
-from ..utils import vrp_solver,distance_matrix
+from ..utils import vrp_solver,distance_matrix,geocoding
+import pandas as pd
 
-def calculate_routes(data,request):
-    if not request.is_json:
-        return jsonify({"error": "Request must be JSON"}), 400
-    
-    data = request.json
-    required_fields = ["locations", "num_vehicles", "depot", "capacities", "demands"]
-    
-    for field in required_fields:
-        if field not in data:
-            return jsonify({"error": f"Missing required field: {field}"}), 400
-    
+
+def calculate_routes(data,excel_file):
+
     try:
-        locations = data["locations"]
+        if excel_file:
+            df=pd.read_excel(excel_file).fillna('')
+            address_list = [", ".join(map(str, filter(None, row))) for row in df.itertuples(index=False, name=None)]
+            print(address_list)
+        
+
+            locations=geocoding.geoapifyCoding(address_list)
+
+        if not excel_file:
+            locations = data["locations"]
+        
         num_vehicles = data["num_vehicles"]
         depot = data["depot"]
         vehicle_capacities = data["capacities"]
         demands = data["demands"]
-
+        
+        
         # Convert locations to a list of lists
         osrm_coords = [[lon, lat] for lon, lat in locations]
 
-        print(type(osrm_coords))
+        print(osrm_coords)
 
         dist_matrix=distance_matrix.distance_matrix_calc(osrm_coords)
         print()
@@ -37,6 +41,7 @@ def calculate_routes(data,request):
     }
         res=vrp_solver.solve_cvrp(data)
         print(res)
+
         # OR-Tools response
         response = {
         'status': 'success',
@@ -64,60 +69,10 @@ def calculate_routes(data,request):
                 prev_load=step['load']
             formatted_routes[route['vehicle_id']]=temp_list
 
-        formatted_routes1 = {
-            route['vehicle_id']: {
-                tuple(locations[step['node']]): step['load']
-                for step in route['route']
-            }
-            for route in response['routes']
-        }
-
-# Print the formatted output
-
-        print('FORMATEED ROUTES 1 !!')
-        print(formatted_routes1)
-
-
-        # for i in formatted_routes:
-        #     formatted_routes[i]=[locations[j] for j in formatted_routes[i]]
-
-        formatted_routes2 = {
-            route['vehicle_id']: {
-                f"{locations[step['node']][0]}, {locations[step['node']][1]}": step['load']
-                for step in route['route']
-            }
-            for route in response['routes']
-        }
-        print('FORMATEDDDD ROUTESSSS 2222')
-        print (formatted_routes2)
-        # Output the result
+        
         print('\n\nFinal Calculated routes')
         print(formatted_routes)
 
-        # fr3 = {}
-
-        # for route in response['routes']:
-        #     vehicle_id = route['vehicle_id']
-        #     fr3[vehicle_id] = {}
-            
-        #     prev_load = 0  # To track the previous load
-        #     for step in route['route']:
-        #         node = step['node']
-        #         coordinates = locations[node]
-                
-        #         # Load picked up at this location (current - previous)
-        #         load_picked_up = step['load'] - prev_load
-        #         prev_load = step['load']  # Update for the next iteration
-                
-        #         # Store the data
-        #         fr3[vehicle_id][f"{coordinates[0]}, {coordinates[1]}"] = load_picked_up
-
-        # # Returning JSON
-        # return {"message": "Success", "calculated_routes": fr3}
-    
-
-
-            # Return a valid response
         return {"message": "Success", "calculated_routes": formatted_routes}
 
     except Exception as e:

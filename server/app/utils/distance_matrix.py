@@ -1,9 +1,9 @@
 import requests
 import json
-
+import os
 
 ORS_URL = "https://api.openrouteservice.org/v2/matrix/driving-car"
-API_KEY = "5b3ce3597851110001cf6248f3c07fdd51264e56872616f96495ffb6"  
+API_KEY = os.getenv('ORS_API_KEY')
 
 def distance_matrix_calc(locations):
     #Summa dummy locations (lon,lat) format
